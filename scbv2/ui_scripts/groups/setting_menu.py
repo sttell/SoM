@@ -83,7 +83,6 @@ class SettingMenu(object):
         self.find_user_points.setObjectName("find_user_points")
         layouts[layouts_widgets[0]].addWidget(self.find_user_points)
         self.find_user_points.setText(_translate("MainWindow", "Найти значения в точках пользователя"))
-        self.find_user_points.setEnabled(False)
 
         self.out_file = QtWidgets.QCheckBox(layouts_widgets[1])
         self.out_file.setObjectName("out_file")

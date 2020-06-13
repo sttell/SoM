@@ -19,6 +19,7 @@ class AddLoadGroup(object):
         self.load_list = list()
         self.reaction_list = list()
         self.hinge_list = list()
+        self.user_points = list()
         """
         INIT UNITS
         """
@@ -156,8 +157,9 @@ class AddLoadGroup(object):
         :return: None
         """
         self.select_load_inp = QtWidgets.QComboBox(menu)
-        self.select_load_inp.setGeometry(QtCore.QRect(90, 490, 151, 26))
+        self.select_load_inp.setGeometry(QtCore.QRect(90, 490, 200, 26))
         self.select_load_inp.setObjectName("select_load_inp")
+        self.select_load_inp.addItem("")
         self.select_load_inp.addItem("")
         self.select_load_inp.addItem("")
         self.select_load_inp.addItem("")
@@ -169,6 +171,7 @@ class AddLoadGroup(object):
         self.select_load_inp.setItemText(2, _translate("MainWindow", "Распр.Нагрузка(Q)"))
         self.select_load_inp.setItemText(3, _translate("MainWindow", "Опора"))
         self.select_load_inp.setItemText(4, _translate("MainWindow", "Врезанный шарнир"))
+        self.select_load_inp.setItemText(5, _translate("MainWindow", "Найти значение в точке"))
 
     def _set_inp_load(self) -> None:
         """
@@ -225,6 +228,17 @@ class AddLoadGroup(object):
             self.value_inp.clear()
         elif self.select_load_inp.currentText() == "Врезанный шарнир":
             self._point_1_lab.setText('Координаты:')
+            self.point_2_inp.hide()
+            self._point_2_mtrc.hide()
+            self._point_2_lab.hide()
+            self.value_inp.hide()
+            self._value_lab.hide()
+            self._value_mtrc.hide()
+            self.point_2_inp.clear()
+            self.point_1_inp.clear()
+            self.value_inp.clear()
+        elif self.select_load_inp.currentText() == "Найти значение в точке":
+            self._point_1_lab.setText('Координата:')
             self.point_2_inp.hide()
             self._point_2_mtrc.hide()
             self._point_2_lab.hide()
@@ -358,12 +372,21 @@ class AddLoadGroup(object):
             else:
                 self.error_box(main_window, 'Введенное значение не корректно.', 'Ошибка')
 
+        elif self.select_load_inp.currentText() == "Найти значение в точке":
+            if check_correct_reac(self.point_1_inp.text()):
+                coord = clear_text(self.point_1_inp.text())
+                load = f'Значение в точке пользователя: x = {coord} м'
+                add_to_window(self._load_params_window, load)
+                self.user_points.append(float(coord))
+            else:
+                self.error_box(main_window, 'Введенное значение не корректно.', 'Ошибка')
+
     def get_data(self) -> (list, list, list):
         """
         Returns data entered by the user collected during the entire program execution.
         :return: Load list, Reaction list, Hinge list
         """
-        return self.load_list, self.reaction_list, self.hinge_list
+        return self.load_list, self.reaction_list, self.hinge_list, self.user_points
 
     def clr_last_load_panel(self, window: QtWidgets.QTextBrowser) -> None:
         """

@@ -7,7 +7,7 @@
 
 from PyQt5 import QtWidgets
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 import time
 import os
 
@@ -298,6 +298,7 @@ class Solver(object):
         self.load_list = task_params["FORCES"]
         self.reaction_coord = task_params["REACTIONS"]
         self.hingles_list = task_params["HINGHLES"]
+        self.user_points_coords = task_params["USER_POINTS"]
         self.beam_lenght = task_params["BEAM_LENGHT"]
         self.elastic = task_params["ELASTIC_MODULE"]
         self.inertion = task_params["INERTION_MOMENT"]
@@ -360,10 +361,10 @@ class Solver(object):
             for force in self.load_list:
                 b1 += force.form_v(self.reaction_coord[0])
                 b2 += force.form_v(self.reaction_coord[1])
-            mtrx = numpy.array([[1, self.reaction_coord[0]],
-                               [1, self.reaction_coord[1]]])
-            v1 = numpy.array([-b1, -b2])
-            vector = numpy.linalg.solve(mtrx, v1)
+            mtrx = np.array([[1, self.reaction_coord[0]],
+                             [1, self.reaction_coord[1]]])
+            v1 = np.array([-b1, -b2])
+            vector = np.linalg.solve(mtrx, v1)
             self.v0 = vector[0]
             self.phi0 = vector[1]
             del b1, b2, mtrx, v1, vector
@@ -395,6 +396,7 @@ class Solver(object):
         # The number of steps for solving the problem with the specified accuracy
         num_steps = pow(self.eps, -1)
         # Variable for further storage of output text.
+        rn = len(str(dx)) - 2  # Round number
         text = f"""------> Произведен запуск вычислений. <------
 Параметры задачи:
 Точность вычислений - {self.eps}
@@ -408,6 +410,55 @@ class Solver(object):
 """
         # Calculation cycle
         start_time = time.time()
+
+        # Searches for values in user points
+        if self.user_points and len(self.user_points_coords) != 0:
+            # Initialize lists to hold the values
+            q_points_val = list()
+            m_points_val = list()
+            phi_points_val = list()
+            v_points_val = list()
+
+            for p_coord in self.user_points_coords:
+                # Initialize variables to hold the values
+                p_q = 0
+                p_m = 0
+                p_phi = self.phi0  # Initial conditions method
+                p_v = self.v0 + self.phi0 * p_coord  # Initial conditions method
+
+                # Search for values
+                for load in self.load_list:
+                    p_q += load.form_q(coord=p_coord) / (self.elastic * self.inertion)
+                    p_m += load.form_m(coord=p_coord) / (self.elastic * self.inertion)
+                    p_phi += load.form_phi(coord=p_coord) / (self.elastic * self.inertion)
+                    p_v += load.form_v(coord=p_coord) / (self.elastic * self.inertion)
+
+                # Added values
+                q_points_val.append(round(p_q, rn))
+                m_points_val.append(round(p_m, rn))
+                phi_points_val.append(round(p_phi, rn))
+                v_points_val.append(round(p_v, rn))
+
+            # Set OutWindow text
+            text += '-----> Значения в точках пользователя <-----\n'
+            # Counter
+            ctr = 0
+
+            for point in self.user_points_coords:
+                points_text = f"""Значения в точке х={point} м:
+Q(x)={q_points_val[ctr]}; M(x) = {m_points_val[ctr]}; Phi(x)={phi_points_val[ctr]}; V(x) = {v_points_val[ctr]}
+
+"""
+                ctr += 1
+                text += points_text
+            text += '\n'
+
+            # Clear memory
+            del p_q, p_v, p_phi, p_coord
+            del q_points_val, m_points_val, v_points_val, phi_points_val
+            del ctr, points_text
+
+        # Main solution
         for x in [val / num_steps for val in range(0, int(self.beam_lenght * num_steps) + 1)]:
             ep_q = 0
             ep_m = 0
@@ -428,14 +479,12 @@ class Solver(object):
             v_values.append(ep_v)
 
             if self.out_file or self.out_gui:
-                rn = len(str(dx)) - 2  # Round number
                 text += f'X={round(x, rn)} ; Q={round(ep_q, rn)} ; M={round(ep_m,rn)} ;' + \
                         f' Phi={round(ep_phi,rn)} ; V={round(ep_v,rn)} ;\n'
         end_time = time.time()
         # Output data to the user interface
         if self.out_gui:
             if self.show_extr:
-                rn = len(str(dx)) - 2
                 extr_point_text = \
                     f"""------> Максимальные значения в точках экстремума <------
 Q(x): max({round(max(q_values), rn)}), min({round(min(q_values), rn)})

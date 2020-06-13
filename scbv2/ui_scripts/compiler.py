@@ -35,7 +35,7 @@ class Compiler(object):
         lenght, elastic, inertion_mom, reac_type = bg.return_values(main_window)
         if None in (lenght, elastic, inertion_mom, reac_type):
             return None
-        force_list, reac_list, hinghle_list = alg.get_data()
+        force_list, reac_list, hinghle_list, user_points = alg.get_data()
         if len(force_list) == 0:
             pass
         if reac_type == "Шарнирно-опертая (Два шарнира)" and len(reac_list) != 2:
@@ -48,6 +48,7 @@ class Compiler(object):
         return {"FORCES": force_list,
                 "REACTIONS": reac_list,
                 "HINGHLES": hinghle_list,
+                "USER_POINTS": user_points,
                 "BEAM_LENGHT": lenght,
                 "ELASTIC_MODULE": elastic,
                 "INERTION_MOMENT": inertion_mom,
