@@ -52,7 +52,7 @@ class UIMainWindow(object):
         self.mw = mw
         # User localisation interface
         self.LOCALE = setting_loc
-        self._setup_ui()
+        self._setup_ui(mw)
 
     def _setup_ui(self, main_window):
         # Init main_window
@@ -69,7 +69,7 @@ class UIMainWindow(object):
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         size_policy.setHorizontalStretch(0)
         size_policy.setVerticalStretch(0)
-        size_policy.setHeightForWidth(self.greeting_lab.size_policy().hasHeightForWidth())
+        size_policy.setHeightForWidth(self.greeting_lab.sizePolicy().hasHeightForWidth())
         self.greeting_lab.setSizePolicy(size_policy)
         # Font settings for this label
         font = QtGui.QFont()
