@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # You are using an open source project
 # Date when the first version of this module was created: 09.06.2020 6:30 AM
-# Date when the module was last edited: 09.06.2020 10:40 AM
+# Date when the module was last edited: 13.06.2020 9:21 AM
 # The Creator is not responsible for any changes made by a third party developer
 # Author: Biro Ilya. St.Tell MAIL:st.tell@mail.ru Russia, Moscow
+
 from PyQt5 import QtWidgets
 import matplotlib.pyplot as plt
 import numpy
@@ -394,8 +395,7 @@ class Solver(object):
         # The number of steps for solving the problem with the specified accuracy
         num_steps = pow(self.eps, -1)
         # Variable for further storage of output text.
-        text = f"""
-Произведен запуск вычислений.
+        text = f"""------> Произведен запуск вычислений. <------
 Параметры задачи:
 Точность вычислений - {self.eps}
 Тип опор в задаче: {self.reac_type}
@@ -403,8 +403,9 @@ class Solver(object):
 Количество заданных нагрузрок: {len(self.load_list)}
 Количество шарниров: {len(self.hingles_list)}
 
+Доп информация по решению ниже.
 
-        """
+"""
         # Calculation cycle
         start_time = time.time()
         for x in [val / num_steps for val in range(0, int(self.beam_lenght * num_steps) + 1)]:
@@ -421,14 +422,11 @@ class Solver(object):
 
             # Writes values to lists depending on the settings set by the user.
             x_coords.append(x)
-            if self.create_q:
-                q_values.append(ep_q)
-            if self.create_m:
-                m_values.append(ep_m)
-            if self.create_phi:
-                phi_values.append(ep_phi)
-            if self.create_v:
-                v_values.append(ep_v)
+            q_values.append(ep_q)
+            m_values.append(ep_m)
+            phi_values.append(ep_phi)
+            v_values.append(ep_v)
+
             if self.out_file or self.out_gui:
                 rn = len(str(dx)) - 2  # Round number
                 text += f'X={round(x, rn)} ; Q={round(ep_q, rn)} ; M={round(ep_m,rn)} ;' + \
@@ -436,6 +434,16 @@ class Solver(object):
         end_time = time.time()
         # Output data to the user interface
         if self.out_gui:
+            if self.show_extr:
+                rn = len(str(dx)) - 2
+                extr_point_text = \
+                    f"""------> Максимальные значения в точках экстремума <------
+Q(x): max({round(max(q_values), rn)}), min({round(min(q_values), rn)})
+M(x): max({round(max(m_values), rn)}), min({round(min(m_values), rn)})
+Phi(x): max({round(max(phi_values), rn)}, min({round(min(phi_values), rn)})
+V(x): max({round(max(v_values), rn)}), min({round(min(v_values), rn)})
+"""
+                text += extr_point_text
             self.out_window.setText(text)
         # Output to file
         # The try-except construct is responsible
@@ -458,34 +466,39 @@ class Solver(object):
             file.write(text)
             file.close()
 
-        # Starts the process of creating load graphs.
-        if self.create_graph:
-            start_time = time.time()
-            if self.create_q:
-                q = Epure(x_coords, q_values, self.image_dir, image_format=self.image_fmt, obj_name="Q")
-                q.plot_graph()
-            if self.create_m:
-                m = Epure(x_coords, m_values, self.image_dir, image_format=self.image_fmt, obj_name="M")
-                m.plot_graph()
-            if self.create_phi:
-                phi = Epure(x_coords, phi_values, self.image_dir, image_format=self.image_fmt, obj_name="Phi")
-                phi.plot_graph()
-            if self.create_v:
-                v = Epure(x_coords, v_values, self.image_dir, image_format=self.image_fmt, obj_name="v")
-                v.plot_graph()
-            end_time = time.time()
-            new_txt = self.out_window.toPlainText() + f'Время постоения графиков: {end_time- start_time}\n'
-            self.out_window.setText(new_txt)
-        # Clear memory
-        del ep_v, ep_q, ep_phi, ep_m, v, phi, q, m
-        del q_values, m_values, v_values, phi_values
-        del path, rn, x_coords, x, num_steps, dx, start_time, end_time
+            # Starts the process of creating load graphs.
+            if self.create_graph:
+                start_time = time.time()
+                if self.create_q:
+                    q = Epure(x_coords, q_values, self.image_dir, image_format=self.image_fmt, obj_name="Q")
+                    q.set_eps(self.eps)
+                    q.plot_graph(show_extr=self.show_extr)
+                if self.create_m:
+                    m = Epure(x_coords, m_values, self.image_dir, image_format=self.image_fmt, obj_name="M")
+                    m.set_eps(self.eps)
+                    m.plot_graph(show_extr=self.show_extr)
+                if self.create_phi:
+                    phi = Epure(x_coords, phi_values, self.image_dir, image_format=self.image_fmt, obj_name="Phi")
+                    phi.set_eps(self.eps)
+                    phi.plot_graph(show_extr=self.show_extr)
+                if self.create_v:
+                    v = Epure(x_coords, v_values, self.image_dir, image_format=self.image_fmt, obj_name="v")
+                    v.set_eps(self.eps)
+                    v.plot_graph(show_extr=self.show_extr)
+                end_time = time.time()
+                new_txt = self.out_window.toPlainText() + f'Время постоения графиков: {end_time - start_time}\n'
+                self.out_window.setText(new_txt)
+            # Clear memory
+            del ep_v, ep_q, ep_phi, ep_m, v, phi, q, m
+            del q_values, m_values, v_values, phi_values
+            del path, rn, x_coords, x, num_steps, dx, start_time, end_time
 
 
 class Epure(object):
     """
     Class Epure. Responsible for the graphical representation of lists.
     """
+
     def __init__(self, x_list, y_list, directory_path, image_format='png', obj_name=None):
         """
         :param x_list: x-coord values
@@ -499,6 +512,7 @@ class Epure(object):
         self.name = obj_name
         self.dir = directory_path
         self.fmt = image_format
+        self.eps = 0.001
 
     def normalisation(self):
         """
@@ -514,11 +528,25 @@ class Epure(object):
                 else:
                     self.y.append(0)
 
-    def plot_graph(self):
+    def set_eps(self, eps: float):
+        """
+        Sets the value of the precision build. By default, it is 0.001.
+        :param eps: precision
+        :return: None
+        """
+        self.eps = eps
+
+    def plot_graph(self, show_extr=False):
         """
         Plotting a function
         :return: None
         """
+
+        def get_rotation(y_coord):
+            if y_coord <= 0:
+                return -10
+            else:
+                return 10
 
         # Image parameters
         fig = plt.gcf()
@@ -546,6 +574,40 @@ class Epure(object):
 
         # Set Grid
         plt.grid()
+        # Plotting point extr
+        if show_extr:
+            # Marks the extreme points on the chart.
+
+            y = np.array(self.y)
+            x = np.array(self.x)
+
+            # Max point
+            i = np.unravel_index(y.argmax(), y.shape)
+            x_pos = x[i]
+            y_max = np.max(y)
+
+            # The mask is created in the EPS neighborhood of the extreme point
+            if y_max >= 0:
+                mask = y > (y_max - self.eps)
+            else:
+                mask = y < (y_max + self.eps)
+
+            plt.scatter(x[mask], y[mask], color='orange', s=40, marker='o')
+            plt.text(x_pos, y_max, f'{round(y_max, 4)}', rotation=get_rotation(y_max))
+
+            # Min point
+            i = np.unravel_index(y.argmin(), y.shape)
+            x_pos = x[i]
+            y_min = np.min(y)
+
+            # The mask is created in the EPS neighborhood of the extreme point
+            if y_min <= 0:
+                mask = y < (y_min + self.eps)
+            else:
+                mask = y > (y_min - self.eps)
+
+            plt.scatter(x[mask], y[mask], color='orange', s=40, marker='o')
+            plt.text(x_pos, y_min, f'{round(y_min, 4)}', rotation=get_rotation(y_min))
 
         # The try-except construct is responsible
         # for intercepting an exception caused by the absence of a save directory. I

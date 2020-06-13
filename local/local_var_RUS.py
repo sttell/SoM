@@ -1,7 +1,7 @@
 # Inscriptions in the localization of the Russian language
 
-main_window_label = "SOM v.1.0.0. - Выбор задачи"
-welcome_to_SOM = "Добро пожаловать в SOM v.1.0.0"
+main_window_label = "SOM v.1.0.3. - Выбор задачи"
+welcome_to_SOM = "Добро пожаловать в SOM v.1.0.3"
 start = "Начать"
 tt_cross_bend_stc = "Поперечный изгиб(Стат.Определимая)"
 tt_torsion = "Кручение"

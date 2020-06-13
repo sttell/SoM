@@ -1,7 +1,7 @@
 # Inscriptions in the localization of the English language
 
-main_window_label = "SOM V. 1. 0. 0. - task Selection"
-welcome_to_SOM = "        Welcome to SOM v.1.0.0"
+main_window_label = "SOM V. 1. 0. 3. - task Selection"
+welcome_to_SOM = "        Welcome to SOM v.1.0.3"
 start = "Start"
 tt_cross_bend_stc = "Transverse bend(Stat.Definable)"
 tt_torsion = "Torsion"

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # You are using an open source project
 # Date when the first version of this module was created: 05.06.2020 7:00 AM
-# Date when the module was last edited: 09.06.2020 00:46 AM
+# Date when the module was last edited: 13.06.2020 9:23 AM
 # The Creator is not responsible for any changes made by a third party developer
 # Author: Biro Ilya. St.Tell MAIL:st.tell@mail.ru Russia, Moscow
 
@@ -78,7 +78,6 @@ class SettingMenu(object):
         self.show_extr.setObjectName("show_extr")
         layouts[layouts_widgets[0]].addWidget(self.show_extr)
         self.show_extr.setText(_translate("MainWindow", "Показать точки экстремума на графиках"))
-        self.show_extr.setEnabled(False)
 
         self.find_user_points = QtWidgets.QCheckBox(layouts_widgets[0])
         self.find_user_points.setObjectName("find_user_points")
