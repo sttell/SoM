@@ -41,6 +41,11 @@ class Mark(object):
         self.settings_menu.setObjectName("settings_menu")
         self.tab_menu.addTab(self.settings_menu, "Настройки")
 
+        # Item in tab menu: help
+        self.help_menu = QtWidgets.QWidget()
+        self.help_menu.setObjectName("help_menu")
+        self.tab_menu.addTab(self.help_menu, "Помощь")
+
         # Left Layout in settings menu.
         # Contain CheckBoxes for settings solver
         self.verticalLayoutWidget = QtWidgets.QWidget(self.settings_menu)

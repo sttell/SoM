@@ -11,6 +11,7 @@ import scbv2.ui_scripts.widgets.window_markings as marks
 import scbv2.ui_scripts.groups.beam_group_ui as beam_group
 import scbv2.ui_scripts.groups.output_group as out_group
 import scbv2.ui_scripts.groups.decore_group as dec_group
+import scbv2.ui_scripts.groups.help_menu_group as hlp
 import scbv2.ui_scripts.groups.setting_menu as sttng
 import scbv2.ui_scripts.compiler as compil
 import scbv2.solver as solver
@@ -44,6 +45,8 @@ class UiMainWindow(Qt.QWidget):
                                      [marking.verticalLayoutWidget, marking.verticalLayoutWidget_2],
                                      {marking.verticalLayoutWidget: marking.verticalLayout,
                                       marking.verticalLayoutWidget_2: marking.verticalLayout_2})
+        # Help menu
+        help_menu = hlp.HelpMenu(marking.help_menu)
         comp.start_sol_btn.clicked.connect(
                 lambda obj,
                 beam=bg,
