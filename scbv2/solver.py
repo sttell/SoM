@@ -8,8 +8,20 @@
 from PyQt5 import QtWidgets
 import matplotlib.pyplot as plt
 import numpy as np
-import time
+from datetime import datetime
 import os
+
+
+def timeit(func):
+    """
+    Decorator to track the process time
+    """
+    def wrapper(*args, **kwargs):
+        start = datetime.now()
+        result = func(*args, **kwargs)
+        time = datetime.now() - start
+        return result, time
+    return wrapper
 
 
 class P(object):
@@ -274,7 +286,9 @@ class Solver(object):
         self.progress_value += 3
         self.progress_bar.setValue(self.progress_value)
         # Method that forms the output
-        self._get_solution()
+        unp_data = self._get_solution()
+        self.out_window.append(
+            f'Время выполнения полного процесса:{str(unp_data[1])}')
 
     def _unpack_settings(self, settings_params: dict) -> None:
         """
@@ -383,12 +397,126 @@ class Solver(object):
             # The values remain null because of the physical meaning
             pass
 
-    def _get_solution(self) -> None:
+    @timeit
+    def _get_solution(self):
         """
         The main method responsible for calculating
         the problem with the set conditions and settings.
         :return: Nothing
         """
+        def user_values(points_list, load_list, phi0, v0) -> str:
+            """
+            The function finds values at custom points and adds them to the output
+            Parameters
+            ----------
+            points_list: The coordinates of the points
+            load_list: A list of loads
+            phi0: Starting angle of rotation
+            v0: Initial displacement
+
+            Returns
+            -------
+            Text with values in points
+            """
+            def add_text():
+                """
+                Adding text based on the resulting solution
+                Returns
+                -------
+                str
+                """
+                # Set OutWindow text
+                nonlocal points_list
+                nonlocal q_points_val, m_points_val
+                nonlocal phi_points_val, v_points_val
+                out_val = '-----> Значения в точках пользователя <-----\n'
+                # Counter
+                ctr = 0
+
+                for point in self.user_points_coords:
+                    points_text = f"""Значения в точке х={point} м:
+Q(x)={q_points_val[ctr]}; M(x) = {m_points_val[ctr]}; Phi(x)={phi_points_val[ctr]}; V(x) = {v_points_val[ctr]}
+
+"""
+                    ctr += 1
+                    out_val += points_text
+                out_val += '\n'
+                del ctr, points_text
+                return out_val
+            # Searches for values in user points
+            # Initialize lists to hold the values
+            q_points_val = list()
+            m_points_val = list()
+            phi_points_val = list()
+            v_points_val = list()
+
+            for p_coord in points_list:
+                # Initialize variables to hold the values
+                p_q = 0
+                p_m = 0
+                p_phi = phi0  # Initial conditions method
+                p_v = v0 + phi0 * p_coord  # Initial conditions method
+
+                # Search for values
+                for load in load_list:
+                    p_q += load.form_q(coord=p_coord) / (self.elastic * self.inertion)
+                    p_m += load.form_m(coord=p_coord) / (self.elastic * self.inertion)
+                    p_phi += load.form_phi(coord=p_coord) / (self.elastic * self.inertion)
+                    p_v += load.form_v(coord=p_coord) / (self.elastic * self.inertion)
+
+                # Added values
+                q_points_val.append(round(p_q, rn))
+                m_points_val.append(round(p_m, rn))
+                phi_points_val.append(round(p_phi, rn))
+                v_points_val.append(round(p_v, rn))
+
+            output = add_text()
+            # Clear memory
+            del p_q, p_v, p_phi, p_coord
+            del q_points_val, m_points_val, v_points_val, phi_points_val
+            return output
+
+        @timeit
+        def create_graphics(g_q: bool, g_m: bool, g_phi: bool, g_v: bool, show_extr: bool, eps: float,
+                            pg: QtWidgets.QProgressBar, img_dir: str, img_fmt='PNG'):
+            """
+            The function plots the graphs specified by the user in the settings
+            :param g_q: do I need to plot Q
+            :param g_m: do I need to plot M
+            :param g_v: do I need to plot V
+            :param g_phi: do I need to plot Phi
+            :param show_extr: do I need show extr points in graph
+            :param eps: Accuracy
+            :param pg: Progress bar in Main Window
+            :param img_dir: Image directory path
+            :param img_fmt: Image save format
+
+            :return: None
+            """
+            if g_q:
+                q = Epure(x_coords, q_values, img_dir, image_format=img_fmt, obj_name="Q")
+                q.set_eps(eps)
+                q.plot_graph(show_extr=show_extr)
+                pv = 70
+                pg.setValue(pv)
+            if g_m:
+                m = Epure(x_coords, m_values, img_dir, image_format=img_fmt, obj_name="M")
+                m.set_eps(eps)
+                m.plot_graph(show_extr=show_extr)
+                pv = 80
+                pg.setValue(pv)
+            if g_phi:
+                phi = Epure(x_coords, phi_values, img_dir, image_format=img_fmt, obj_name="Phi")
+                phi.set_eps(eps)
+                phi.plot_graph(show_extr=show_extr)
+                pv = 90
+                pg.setValue(pv)
+            if g_v:
+                v = Epure(x_coords, v_values, img_dir, image_format=img_fmt, obj_name="V")
+                v.set_eps(eps)
+                v.plot_graph(show_extr=show_extr)
+                pv = 100
+                pg.setValue(pv)
 
         # Lists for further storage of the solution.
         # List with coordinates of calculation points.
@@ -419,54 +547,11 @@ class Solver(object):
 
 """
         # Calculation cycle
-        start_time = time.time()
+        start_time = datetime.now()
 
-        # Searches for values in user points
         if self.user_points and len(self.user_points_coords) != 0:
-            # Initialize lists to hold the values
-            q_points_val = list()
-            m_points_val = list()
-            phi_points_val = list()
-            v_points_val = list()
-
-            for p_coord in self.user_points_coords:
-                # Initialize variables to hold the values
-                p_q = 0
-                p_m = 0
-                p_phi = self.phi0  # Initial conditions method
-                p_v = self.v0 + self.phi0 * p_coord  # Initial conditions method
-
-                # Search for values
-                for load in self.load_list:
-                    p_q += load.form_q(coord=p_coord) / (self.elastic * self.inertion)
-                    p_m += load.form_m(coord=p_coord) / (self.elastic * self.inertion)
-                    p_phi += load.form_phi(coord=p_coord) / (self.elastic * self.inertion)
-                    p_v += load.form_v(coord=p_coord) / (self.elastic * self.inertion)
-
-                # Added values
-                q_points_val.append(round(p_q, rn))
-                m_points_val.append(round(p_m, rn))
-                phi_points_val.append(round(p_phi, rn))
-                v_points_val.append(round(p_v, rn))
-
-            # Set OutWindow text
-            text += '-----> Значения в точках пользователя <-----\n'
-            # Counter
-            ctr = 0
-
-            for point in self.user_points_coords:
-                points_text = f"""Значения в точке х={point} м:
-Q(x)={q_points_val[ctr]}; M(x) = {m_points_val[ctr]}; Phi(x)={phi_points_val[ctr]}; V(x) = {v_points_val[ctr]}
-
-"""
-                ctr += 1
-                text += points_text
-            text += '\n'
-
-            # Clear memory
-            del p_q, p_v, p_phi, p_coord
-            del q_points_val, m_points_val, v_points_val, phi_points_val
-            del ctr, points_text
+            text += user_values(self.user_points_coords, self.load_list,
+                                self.phi0, self.v0)
 
         # Main solution
         pos = 10 / num_steps
@@ -497,7 +582,8 @@ Q(x)={q_points_val[ctr]}; M(x) = {m_points_val[ctr]}; Phi(x)={phi_points_val[ctr
 
         # Output
         # Time solver process
-        end_time = time.time()
+        end_time = datetime.now()
+
         # Output data to the user interface
         if self.out_gui:
             if self.show_extr:
@@ -510,6 +596,7 @@ V(x): max({round(max(v_values), rn)}), min({round(min(v_values), rn)})
 """
                 text += extr_point_text
             self.out_window.setText(text)
+
         # Output to file
         # The try-except construct is responsible
         # for intercepting an exception caused by the absence of a save directory. I
@@ -533,36 +620,15 @@ V(x): max({round(max(v_values), rn)}), min({round(min(v_values), rn)})
 
         # Starts the process of creating load graphs.
         if self.create_graph:
-            start_time = time.time()
-            if self.create_q:
-                q = Epure(x_coords, q_values, self.image_dir, image_format=self.image_fmt, obj_name="Q")
-                q.set_eps(self.eps)
-                q.plot_graph(show_extr=self.show_extr)
-                self.progress_value = 70
-                self.progress_bar.setValue(self.progress_value)
-            if self.create_m:
-                m = Epure(x_coords, m_values, self.image_dir, image_format=self.image_fmt, obj_name="M")
-                m.set_eps(self.eps)
-                m.plot_graph(show_extr=self.show_extr)
-                self.progress_value = 80
-                self.progress_bar.setValue(self.progress_value)
-            if self.create_phi:
-                phi = Epure(x_coords, phi_values, self.image_dir, image_format=self.image_fmt, obj_name="Phi")
-                phi.set_eps(self.eps)
-                phi.plot_graph(show_extr=self.show_extr)
-                self.progress_value = 90
-                self.progress_bar.setValue(self.progress_value)
-            if self.create_v:
-                v = Epure(x_coords, v_values, self.image_dir, image_format=self.image_fmt, obj_name="v")
-                v.set_eps(self.eps)
-                v.plot_graph(show_extr=self.show_extr)
-                self.progress_value = 100
-                self.progress_bar.setValue(self.progress_value)
-            end_time = time.time()
-            new_txt = self.out_window.toPlainText() + f'Время постоения графиков: {end_time - start_time}\n'
+            _, process_time = create_graphics(self.create_q, self.create_m,
+                                              self.create_phi, self.create_v,
+                                              self.show_extr, self.eps, self.progress_bar,
+                                              self.image_dir, self.image_fmt)
+            new_txt = self.out_window.toPlainText() + f'Время постоения графиков: {process_time}\n'
             self.out_window.setText(new_txt)
+
         # Clear memory
-        del ep_v, ep_q, ep_phi, ep_m, v, phi, q, m
+        del ep_v, ep_q, ep_phi, ep_m
         del q_values, m_values, v_values, phi_values
         del path, rn, x_coords, x, num_steps, dx, start_time, end_time
 
