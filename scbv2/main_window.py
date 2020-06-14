@@ -53,7 +53,8 @@ class UiMainWindow(Qt.QWidget):
                                                               load,
                                                               settings,
                                                               main_wind,
-                                                              og.out_window))
+                                                              og.out_window,
+                                                              og.pbar))
         dec.set_task_label(self.centralwidget, "Поперечный изгиб (Статически определимая)")
         self._st_mb_init(marking)
         self._retrans_marks_ui(self.MainWindow)
@@ -64,7 +65,8 @@ class UiMainWindow(Qt.QWidget):
                       obj2: load_group.AddLoadGroup,
                       obj3: sttng.SettingMenu,
                       main_window: QtWidgets.QMainWindow,
-                      out_window: QtWidgets.QTextBrowser):
+                      out_window: QtWidgets.QTextBrowser,
+                      pbar: QtWidgets.QProgressBar):
         """
         Static method. Accepts objects containing the parameters
         needed to run the solution and passes them to the solver.
@@ -74,6 +76,7 @@ class UiMainWindow(Qt.QWidget):
         :param obj3: Menu object with settings.
         :param main_window: The object of the main window.
         :param out_window: Object of the data output window.
+        :param pbar: Progress Bar.
         :return: Nothing.
         """
         # The collection of parameters of the problem.
@@ -87,7 +90,7 @@ class UiMainWindow(Qt.QWidget):
         # In this case, the value None will be returned to the task_dict variable.
         # In order not to continue running the program, the following construction is intended.
         if task_dict is not None:
-            sol = solver.Solver(out_window)
+            sol = solver.Solver(out_window, pbar)
             sol.run_solver(task_dict, setting_dict)
 
     def _st_mb_init(self, mark: marks.Mark) -> None:

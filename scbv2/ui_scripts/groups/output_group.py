@@ -16,6 +16,9 @@ class OutGroup(object):
         self.out_window = QtWidgets.QTextBrowser(menu)
         self.out_window.setGeometry(QtCore.QRect(408, 4, 580, 701))
         self.out_window.setObjectName('out_window')
+        self.pbar = QtWidgets.QProgressBar(menu)
+        self.pbar.setGeometry(QtCore.QRect(408, 710, 570, 30))
+        self.pbar.setValue(0)
 
     def add_result(self, text: str) -> None:
         """

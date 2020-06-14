@@ -50,7 +50,7 @@ class P(object):
         :return: Coefficient of influence on the graph Phi
         """
         if self.x <= coord:
-            return -self.val * (coord - self.x) ** 2 * 0.5
+            return - self.val * (coord - self.x) ** 2 / 2
         return 0.0
 
     def form_v(self, coord: float) -> float:
@@ -183,7 +183,7 @@ class Q(object):
         if self.start <= coord <= self.end:
             return -self.q * (coord - self.start) ** 3 / 6
         elif self.end < coord:
-            return -self.q / 6 * ((coord - self.start) ** 3 - (coord - self.end) ** 3)
+            return -self.q * ((coord - self.start) ** 3 - (coord - self.end) ** 3) / 6
         return 0
 
     def form_v(self, coord: float) -> float:
@@ -214,10 +214,12 @@ class Q(object):
 
 class Solver(object):
     # Class responsible for performing calculations in the task.
-    def __init__(self, out_window: QtWidgets.QTextBrowser):
+    def __init__(self, out_window: QtWidgets.QTextBrowser, pbar: QtWidgets.QProgressBar):
         # Output window object
         self.out_window = out_window
-
+        self.progress_bar = pbar
+        # Initial progress value
+        self.progress_value = 0
         # In the future it will take the boolean value
         # Updated in the _unpack_settings method
         self.create_q = None
@@ -257,12 +259,20 @@ class Solver(object):
         """
         # Method for unpacking settings
         self._unpack_settings(settings_params)
+        self.progress_value += 2
+        self.progress_bar.setValue(self.progress_value)
         # Method for unpacking an issue
         self._unpack_task(task_params)
+        self.progress_value += 3
+        self.progress_bar.setValue(self.progress_value)
         # The method of calculating the reactions
         self._calc_reactions()
+        self.progress_value += 2
+        self.progress_bar.setValue(self.progress_value)
         # Method for calculating initial parameters
         self._calc_init_condition()
+        self.progress_value += 3
+        self.progress_bar.setValue(self.progress_value)
         # Method that forms the output
         self._get_solution()
 
@@ -459,6 +469,7 @@ Q(x)={q_points_val[ctr]}; M(x) = {m_points_val[ctr]}; Phi(x)={phi_points_val[ctr
             del ctr, points_text
 
         # Main solution
+        pos = 10 / num_steps
         for x in [val / num_steps for val in range(0, int(self.beam_lenght * num_steps) + 1)]:
             ep_q = 0
             ep_m = 0
@@ -481,6 +492,11 @@ Q(x)={q_points_val[ctr]}; M(x) = {m_points_val[ctr]}; Phi(x)={phi_points_val[ctr
             if self.out_file or self.out_gui:
                 text += f'X={round(x, rn)} ; Q={round(ep_q, rn)} ; M={round(ep_m,rn)} ;' + \
                         f' Phi={round(ep_phi,rn)} ; V={round(ep_v,rn)} ;\n'
+            self.progress_value += pos
+            self.progress_bar.setValue(int(self.progress_value))
+
+        # Output
+        # Time solver process
         end_time = time.time()
         # Output data to the user interface
         if self.out_gui:
@@ -515,32 +531,40 @@ V(x): max({round(max(v_values), rn)}), min({round(min(v_values), rn)})
             file.write(text)
             file.close()
 
-            # Starts the process of creating load graphs.
-            if self.create_graph:
-                start_time = time.time()
-                if self.create_q:
-                    q = Epure(x_coords, q_values, self.image_dir, image_format=self.image_fmt, obj_name="Q")
-                    q.set_eps(self.eps)
-                    q.plot_graph(show_extr=self.show_extr)
-                if self.create_m:
-                    m = Epure(x_coords, m_values, self.image_dir, image_format=self.image_fmt, obj_name="M")
-                    m.set_eps(self.eps)
-                    m.plot_graph(show_extr=self.show_extr)
-                if self.create_phi:
-                    phi = Epure(x_coords, phi_values, self.image_dir, image_format=self.image_fmt, obj_name="Phi")
-                    phi.set_eps(self.eps)
-                    phi.plot_graph(show_extr=self.show_extr)
-                if self.create_v:
-                    v = Epure(x_coords, v_values, self.image_dir, image_format=self.image_fmt, obj_name="v")
-                    v.set_eps(self.eps)
-                    v.plot_graph(show_extr=self.show_extr)
-                end_time = time.time()
-                new_txt = self.out_window.toPlainText() + f'Время постоения графиков: {end_time - start_time}\n'
-                self.out_window.setText(new_txt)
-            # Clear memory
-            del ep_v, ep_q, ep_phi, ep_m, v, phi, q, m
-            del q_values, m_values, v_values, phi_values
-            del path, rn, x_coords, x, num_steps, dx, start_time, end_time
+        # Starts the process of creating load graphs.
+        if self.create_graph:
+            start_time = time.time()
+            if self.create_q:
+                q = Epure(x_coords, q_values, self.image_dir, image_format=self.image_fmt, obj_name="Q")
+                q.set_eps(self.eps)
+                q.plot_graph(show_extr=self.show_extr)
+                self.progress_value = 70
+                self.progress_bar.setValue(self.progress_value)
+            if self.create_m:
+                m = Epure(x_coords, m_values, self.image_dir, image_format=self.image_fmt, obj_name="M")
+                m.set_eps(self.eps)
+                m.plot_graph(show_extr=self.show_extr)
+                self.progress_value = 80
+                self.progress_bar.setValue(self.progress_value)
+            if self.create_phi:
+                phi = Epure(x_coords, phi_values, self.image_dir, image_format=self.image_fmt, obj_name="Phi")
+                phi.set_eps(self.eps)
+                phi.plot_graph(show_extr=self.show_extr)
+                self.progress_value = 90
+                self.progress_bar.setValue(self.progress_value)
+            if self.create_v:
+                v = Epure(x_coords, v_values, self.image_dir, image_format=self.image_fmt, obj_name="v")
+                v.set_eps(self.eps)
+                v.plot_graph(show_extr=self.show_extr)
+                self.progress_value = 100
+                self.progress_bar.setValue(self.progress_value)
+            end_time = time.time()
+            new_txt = self.out_window.toPlainText() + f'Время постоения графиков: {end_time - start_time}\n'
+            self.out_window.setText(new_txt)
+        # Clear memory
+        del ep_v, ep_q, ep_phi, ep_m, v, phi, q, m
+        del q_values, m_values, v_values, phi_values
+        del path, rn, x_coords, x, num_steps, dx, start_time, end_time
 
 
 class Epure(object):
