@@ -109,7 +109,6 @@ class BeamGroup(object):
         self._beam_length_mtrc.addItem("")
         self._beam_length_mtrc.addItem("")
         self._beam_length_mtrc.addItem("")
-        self._beam_length_mtrc.setEnabled(False)
 
         self._beam_length_mtrc.setItemText(0, _translate("MainWindow", "м"))
         self._beam_length_mtrc.setItemText(1, _translate("MainWindow", "мм"))
@@ -141,7 +140,14 @@ class BeamGroup(object):
         # Checking whether the beam length is correct
         try:
             if float(length.lstrip().rstrip().replace(',', '.')) != 0.0:
-                length = float(length.lstrip().rstrip().replace(',', '.'))
+                if self._beam_length_mtrc.currentText() == 'м':
+                    length = float(length.lstrip().rstrip().replace(',', '.'))
+                elif self._beam_length_mtrc.currentText() == 'мм':
+                    length = float(length.lstrip().rstrip().replace(',', '.')) / 1000
+                elif self._beam_length_mtrc.currentText() == 'см':
+                    length = float(length.lstrip().rstrip().replace(',', '.')) / 100
+                elif self._beam_length_mtrc.currentText() == 'км':
+                    length = float(length.lstrip().rstrip().replace(',', '.')) * 1000
             else:
                 self.error_box(main_window,
                                'Длина балки не может быть нулевая.',
